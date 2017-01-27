@@ -1,0 +1,101 @@
+﻿                  <meta charset="utf-8">
+                 **Development Journal**
+
+
+
+2016-10-03: We fixed shadow rays
+=============================================================
+
+![](2016-10-03_003_starter_r1377_g3d_r875___.png)
+
+We were using FLT_EPSILON for our epsilon rounding error, but then changed it to
+.0001f.  We also subtracted by 2 epsilon from shadow ray length.
+
+2016-10-03: Beautiful
+=============================================================
+
+![](journal__.png)
+
+
+2016-10-03: Something seems to be wrong with our shadow rays
+=============================================================
+
+![](2016-10-03_002_starter_r1353_g3d_r875___.png)
+
+
+2016-10-03: Not bad
+=============================================================
+
+![The light is causing a variety of effects](2016-10-03_001_starter_r1353_g3d_r875___The_light_is_causing_a_variety_of_effects.png)
+
+
+2016-10-03: Errors Everywhere
+=============================================================
+
+![](2016-10-03_000_starter_r1309_g3d_r875___.png)
+
+![The statue came out rather oddly](bad_statue.jpg)
+
+2016-10-02: We have nice images
+=============================================================
+
+![4 scattering events and 128 rays](2016-10-02_006_starter_r1273_g3d_r875__4_scattering_events_and_128_rays.jpg)
+
+As a final note: John came in at 4 PM. We continued to work until 10PM. Today has really been a lot of revising the code to be sure sampling really worked and polishing our code to make it look nice. This feels great. Now to run tests tomorrow!
+
+2016-10-02: We got something
+============================================================
+
+![Have a Sky](2016-10-02_005_starter_r1248_g3d_r875___Have_a_Sky.png)
+
+We now have a sky on our Sponza. It doesn't look that awesome on other things,
+but here it does.
+
+![We got Spheres](2016-10-02_004_starter_r1248_g3d_r875___We_got_Spheres.png)
+
+Looks like this is going well so far. We might have to change a ray somewhere
+though.
+
+![EXCITEMENT!](2016-10-02_003_starter_r1240_g3d_r875___EXCITEMENT_.png)
+
+We got sponza in under 1 second (about .25 seconds)
+
+<b> Problem Solved (Thanks Morgan)</b>
+
+    Integer division was really messing up our modulation buffer, which caused black images for any rays per pixel greater than 1. 
+    The solution was obvious, change it to float division....
+    Also, cleaned up the code by minimizing array look ups and minimizing arithmetic.
+    This resulted in a 20% speed-up when running sponza.
+
+![It's almost there!](2016-10-02_002_starter_r1215_g3d_r875___It_s_almost_there_.png)
+
+Looks like indirect light is working. Now to sample correctly!
+
+![Type Checking Sucks....](2016-10-02_001_starter_r1215_g3d_r875___Type_Checking_Sucks.....png)
+
+<b> PROBLEM SOLVED</b>
+
+So our problem was that we were passing in modBuffer instead of biradianceBuffer. Seriously, I would have thought the compiler would have caught that... Except of couse a biradiance is just a color, so the compiler was happy letting us do what we were doing.... 
+
+Therefore, lesson: Always check parameters and what you are passing!
+
+Jose is going to start working on it right now at 3PM to see if he can get scatter done. 
+
+2016-10-01: We got something
+=============================================================
+
+![Looks as though Direct light needs a bit of fixing, but it's close](2016-10-01_000_starter_r1195_g3d_r875___Looks_as_though_Direct_light_needs_a_bit_of_fixing__but_it_s_close.png)
+
+We worked from about 4:30PM to 9PM. We managed to get all of the concurrent threads running, but were unable to figure out why our direct light is not calculating everything correctly. We are still working on that. It's interesting. We spoke to others who have completed this part of the project, and our code seems to be almost the same. Maybe we need to rething how some of it is structured? Or perhaps it is something we are adding/multiplying incorrectly? 
+Oh well, either way, this is at MVP.
+
+2016-09-29: Prep
+=====================================================
+Met in lab to begin coding at 1:45. Finished the outline of the report. Started the Journal.
+
+![First picture using path tracing code](2016-09-29_000_starter_r1092_g3d_r875__First_picture_using_path_tracing_code.jpg)
+
+In lab, we completed the Header file for PathTracer and agreed on the return types and parameters of all the methods neccessary for a MVP.  This resulted in a bunch of helper methods that all write to a buffer and will run concurrently.
+
+<!-- Markdeep: -->
+<style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace;}</style><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>

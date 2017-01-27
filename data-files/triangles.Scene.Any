@@ -1,0 +1,42 @@
+/* -*- c++ -*- */
+{ 
+    name = "triangles"; 
+    models = {
+        glassModel = ArticulatedModel::Specification { 
+            filename = "model/triangles.off";
+            preprocess = {
+                setMaterial(all(), Color3(1,0,1));
+            };
+        }; 
+
+    };
+
+    entities = { 
+
+        skybox = Skybox { 
+            texture = "cubemap/whiteroom/whiteroom-*.png"; 
+        };
+
+
+        cube0 = VisibleEntity {
+            model = "glassModel";
+        };
+       
+        sun = Light { 
+            attenuation = (0, 0, 1); 
+            bulbPower = Power3(1e+6); 
+            castsShadows = true; 
+			shadowMapBias = 0.01;
+            track = lookAt(Point3(-15, 200, 40), Point3(0, 0, 0));
+            shadowMapSize = Vector2int16(2048, 2048); 
+            spotHalfAngleDegrees = 4; 
+            spotSquare = true; 
+            type = "SPOT"; 
+        }; 
+     
+
+        camera = Camera {             
+            frame = CFrame::fromXYZYPRDegrees(2.2017, 3.6361, -1.1797, 139.98, -48.128, 0); 
+        }; 
+    }; 
+ } 

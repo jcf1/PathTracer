@@ -1,0 +1,129 @@
+**Lab 3: Paths**
+        **Jose Rivas (jdr3@williams.edu) and John Freeman (jcf1@williams.edu)** 
+        **with code from Julia Goldman (jdg2@williams.edu).**
+
+Design
+================================
+At a high level, this program goes through each pixel in an image from a scene file, traces some number of paths through it, and scatters each path some designated number of times, in order to approximate the total amount of light that would hit the object shown at that pixel. This is done through a nested for loop, where the outer loop creates an array of rays from the camera to the object at each pixel in our image (via [PathTracer::generateRayBuffer](#aa6c387e612890c11e1c5d54d3a110f32) and creates a modulation buffer with colors of RGB values equal to 1/(number of paths). The inside loop generates the array of surfels hit by our rays (via [G3D::TriTree::intersectRays](http://g3d.cs.williams.edu/g3d/G3D10/build/manual/class_g3_d_1_1_tri_tree_base.html#a4cba499bdba878f5476e792386fd0143)), calls [PathTracer::calcuulateDirectLight](#a3ef66c96b8f2e6d11dccd980fc5494cf) to calculate both the biradiance of a light sampled through [PathTracer::chooseLight](#a9e58615cbbb2508e8dcafb2561aef488) to each surfel and a ray from the light to the surfel stored in a shadow ray buffer, figures out which surfels are hit by lights (via [TriTree::IntersectRays](http://g3d.cs.williams.edu/g3d/G3D10/build/manual/class_g3_d_1_1_tri_tree_base.html#a124999e5b47fff667ee6e0f2d80a6840)), shades the image according to what points are hit by lights (via [PathTracer::shadeImage](#ae26bf2eb18515c746aaaae200e571a67), and finally scatters the original ray buffer (via [PathTracer::scatterRays](#aa0e036c150bd83f34ed8a0a243bc468b)) if it is not the last iteration of our inside loop.  
+
+All of these operations are done using concurrent threads, where each thread accesses a single index of each of our buffers corresponding to the pixel being mutated. These buffers are: a buffer to hold the primary rays (which are scattered after each iteration of the second loop), a modulation buffer to account for each added path's brightness contribution, a shadow ray buffer to hold all the rays from the light we sampled to a surfel, a surfel buffer to hold the surfel each primary ray points to, a buffer to tell us if a ray is in shadows (this allows us to know which locations to color), and a biradiance buffer, which tells us the biradiance from a light to the surfel. All of the above are the size of the image (the width times the length), so that we can run concurrently on each pixel without worrying about threads attempting to write to the same place.
+
+
+Results
+================================
+The following are results from our program.
+
+Correctness Results
+-------------------------------------------------------------------------------------
+![Eye ray directions](eye-ray-directions.png width=150px border=1) ![Hit positions](positions.png width=150px border=1) ![Normals](normals.png width=150px border=1) ![Direct light](direct.png width=150px border=1)
+
+
+Performance
+-----------------------------------------------------------------------------------
+
+![Path Tracing is Linear with Respect to the Scattering Depth](graphScatter.png width=512px border=1)![Path Tracing is also Linear with Respect to the Number of Paths per Pixel](graphPath.png width=512px border=1)
+
+Using last week's Ray Tracing algorithm, the ray tracer was able to render Sponza at 640x400 resolution with Direct Illumination in 55.7 minutes. Our Path Tracer was able to perform this same feat in about a quarter of a second. This is exponentially faster, and shows the benefits of Monte Carlo Algorithms to approximate pixel values. 
+
+Demonstration Images
+-------------------------------------------------------------------------------------
+![1 scattering event in 16.85 seconds](1.png width=120px border=1) ![2 events in 36.04 seconds](2.png width=120px border=1) ![3 events in 52.54 seconds](3.png width=120px border=1) ![4 events in 67.93 seconds](4.png width=120px border=1) ![10 events in 137.89 seconds](10.png width=120px border=1)
+
+Quality Demonstration
+-------------------------------------------------------------------------------------
+
+![The G3D San Miguel from the Balcony Camera's Perspective. The rendered used 500 paths with 6 scattering events at 1280 x 720 resolution and completed in 1.12 hours](quality2.png border=1)
+
+This shows our program running on a complex scene with many paths and 6 scattering events will produce a high quality image.
+
+Phenomena Demonstration Images
+-----------------------------------------------------------------------------------
+
+![Sphere in Water, emphasizing transparency and caustics. 1024 paths/pixel, 7 scattering events, rendered at 640x400 in 23 minutes.](one.png width=512px border=1)
+
+![Color Bleeding on Cornell Box. 1024 paths/pixel, 6 scattering events rendered at 640x400 in 12.13 minutes.](two.png width=512px border=1)
+
+![Cornell Spheres, emphasizing a caustic. 1024 paths/pixel, 10 scattering events rendered at 640x400 in 22.43 minutes.](three.png width=512px border=1)
+
+![Cornell Mirror, emphasizing reflectivity. 1024 paths/pixel, 7 scattering events, rendered at 640x400 in 13.65 minutes.](four.png width=512 border=1)
+
+Questions
+================================
+1. It takes four scattering events to produce a caustic. The first event is the light hitting the outside of a transparent material and refracting. The second event is the light "exiting" the material (hitting the other side) and refracting again. The third event is the light hitting a surface. The fourth event is the light hitting the camera.
+2. The rays project ran at $\O(n*p^{d}*L)$, where n is the number of pixels, p is the number of primary rays per pixel, d is the maximum path depth, and L is the number of lights in teh scene. We can derive this from our tests, where we found that the time is linear with respect to the number of lights, number of pixels, and number of primary rays. We never went deeper than a path depth of 2, but we know that each primary ray produces p scattering rays at each level d, so ultimately we end up with $p^{d}$ scattered rays.
+3. Using the same definition above, we derive that our Path tracer ran at $O(n*p*d*L)$. This is proven by our graphs, which show that this program is definitely linear with respect to the scattering depth and the number of paths. This program is therefore exponentially times faster with respect to the maximum path (scattering) depth d.
+4.  Use the uniform random number generator to generate a random number n between 0 and 100. Then multiply that number by 50.5.  This will give n a value between 0 and 5050, which is the sum of all the numbers from 0 to 100.  Then, make a counter i starting at 1 incrementing once per loop and subtract i from n.  If that subtraction makes n negative, then return i.  This is very similar to the light importance sampling from the lab. Below is code for it.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def proportionalRNG(uniformRNG):
+        n = uniformRNG(0, 100) * 50.5;
+        for(i = 1; i <= 100; ++i):
+            n -= i
+            if(n < 0):
+                return i
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 5. The point of the Path Tracing Algorithm used in this project is that we are able to sample a limit of the rendering algorithm with a high probability that our sample will produce a result similar to the true solution (what the rendering algorithm would produce). So, if we change the algorithm we are using, such that all of the samples were infinite, then, we would just be performing the rendering algorithm. 
+
+Self-Review
+================================
+Below we will provide a short analysis of how we feel we did on this project.
+
+Code Design
+---------------------------------
+Our code is structured in a logical ordering that is efficient and chronological, making it easy to follow the logic behind it.
+
+Code Readability
+----------------------------------
+We spent a lot of time making sure that our code was readable by using specific variable names and breaking the problem into a series of small helper functions that each have a specific job.
+
+Expected Code Correctness
+-----------------------------------
+There are small bugs in our code that result in impecfect pictures, but we are pleased by the overall image results and speed of our program, which meets all of the specifications of the project.
+
+Report Writing and Presentation Quality
+------------------------------------
+The report is presented following the specification provided in a neat and orderly fashion.
+
+Expected Report Correctness
+-----------------------------------
+To the best of our knowledge, we believe we answered all of the questions correctly and provided evidence for our program's correctness.
+
+Workflow as Documented in Journal
+--------------------------------------
+Admittedly, this is our weakest area, because we did not update it every time we made changes, but we feel we were only stuck on a few issues that we did document in our journal.
+
+Overall Expected Grade
+----------------------------------------
+We believe we deserve an A on this project based on our program's correctness and our report.
+
+Skills
+================================
+
+The following is a summary of what we learned in this project.
+
+Software Engineering:
+    - We learned to always check what we are passing to each function when we have a bug
+    - We learned to never use integer division
+    - We learned more of the helpful features implemented into G3D, such as TriTree's intersectRays methods and surfel's scatter method
+
+Algorithmic:
+    - We learned why Monte Carlo algorithms are widely used
+    - We learned, in depth, the path tracing algorithm
+    - We learned how to do importance sampling on lights
+
+Mathematical:
+    - We learned that caustics are caused with a minimum of 4 scattering events
+    - We learned about the cool effects light can have on different surfaces
+    - We learned to bump rays using 0.0001f and not FLT_EPSILON
+
+Other:
+    - We learned how fun it is to make cool pictures
+
+Workflow
+================================
+Jose: 6 Hour MVP + 10 Hour Polish
+John: 5.5 Hour MVP + 10 Hour Polish
+
+A lot of the stuff we did at the end was trying to figure out why some small issues were occuring. Thankfully, we still managed to complete everything with good amount of time to render tests. 
+
+<!-- Markdeep: -->
+<style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace;}</style><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
